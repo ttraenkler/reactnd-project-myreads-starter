@@ -1,22 +1,48 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { BooksGrid } from "../components/BookShelf";
+import { search } from "../BooksAPI";
 import escapeRegExp from "escape-string-regexp";
 import sortBy from "sort-by";
 
 export default class SearchBooks extends React.Component {
   state = {
-    query: ""
+    query: "",
+    results: [] // these are the search results
+  };
+
+  onQueryChange = query => {
+    this.setState({ query });
+    const { library } = this.props;
+    if (query) {
+      search(query, 20).then(results => {
+        if (!results.error) {
+          const shelfedResults = results.map(book => {
+            if (library.has(book.id)) {
+              return library.get(book.id);
+            } else {
+              return book;
+            }
+          });
+          this.setState({
+            results: shelfedResults
+          });
+        }
+      });
+    } else {
+      this.setState({ results: [] });
+    }
   };
 
   render() {
-    const { books, onChange } = this.props;
-    let searchResult = books;
+    const { onChange } = this.props;
+    const { results } = this.state;
+    let sortedResults = results;
     if (this.state.query) {
       const match = new RegExp(escapeRegExp(this.state.query), "i");
-      searchResult = books.filter(book => match.test(book.title));
+      sortedResults = results.filter(book => match.test(book.title));
     }
-    searchResult.sort(sortBy("title"));
+    sortedResults.sort(sortBy("title"));
 
     return (
       <div className="search-books">
@@ -36,12 +62,12 @@ export default class SearchBooks extends React.Component {
             <input
               type="text"
               placeholder="Search by title or author"
-              onChange={e => this.setState({ query: e.target.value })}
+              onChange={e => this.onQueryChange(e.target.value)}
             />
           </div>
         </div>
         <div className="search-books-results">
-          <BooksGrid books={searchResult} onChange={onChange} />
+          <BooksGrid books={sortedResults} onChange={onChange} />
         </div>
       </div>
     );
