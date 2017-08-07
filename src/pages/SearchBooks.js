@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import escapeRegExp from "escape-string-regexp";
 import sortBy from "sort-by";
 import { search } from "../BooksAPI";
+import { throttle } from "lodash";
 import BooksGrid from "../components/BooksGrid";
 
 export default class SearchBooks extends React.Component {
@@ -11,7 +12,8 @@ export default class SearchBooks extends React.Component {
     results: [] // these are the search results
   };
 
-  onQueryChange = query => {
+  onQueryChange = e => {
+    const query = e.target.value;
     this.setState({ query });
     const { library } = this.props;
     let results = new Map();
@@ -21,16 +23,14 @@ export default class SearchBooks extends React.Component {
         if (!response.error) {
           for (let book of response) {
             if (library.has(book.id)) {
-              console.log("book already in shelf");
               results.set(book.id, library.get(book.id));
             } else {
-              console.log("book not yet in shelf");
               results.set(book.id, book);
             }
           }
+          console.log("results.values()", Array.from(results.values()));
+          this.setState({ results: Array.from(results.values()) });
         }
-        console.log("results.values()", Array.from(results.values()));
-        this.setState({ results: Array.from(results.values()) });
       });
     }
   };
@@ -63,7 +63,7 @@ export default class SearchBooks extends React.Component {
             <input
               type="text"
               placeholder="Search by title or author"
-              onChange={e => this.onQueryChange(e.target.value)}
+              onChange={this.onQueryChange}
             />
           </div>
         </div>
