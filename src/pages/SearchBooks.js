@@ -1,9 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { BooksGrid } from "../components/BookShelf";
-import { search } from "../BooksAPI";
 import escapeRegExp from "escape-string-regexp";
 import sortBy from "sort-by";
+import { search } from "../BooksAPI";
+import BooksGrid from "../components/BooksGrid";
 
 export default class SearchBooks extends React.Component {
   state = {
@@ -14,23 +14,24 @@ export default class SearchBooks extends React.Component {
   onQueryChange = query => {
     this.setState({ query });
     const { library } = this.props;
+    let results = new Map();
     if (query) {
-      search(query, 20).then(results => {
-        if (!results.error) {
-          const shelfedResults = results.map(book => {
+      search(query, 20).then(response => {
+        console.log("search request response =", response);
+        if (!response.error) {
+          for (let book of response) {
             if (library.has(book.id)) {
-              return library.get(book.id);
+              console.log("book already in shelf");
+              results.set(book.id, library.get(book.id));
             } else {
-              return book;
+              console.log("book not yet in shelf");
+              results.set(book.id, book);
             }
-          });
-          this.setState({
-            results: shelfedResults
-          });
+          }
         }
+        console.log("results.values()", Array.from(results.values()));
+        this.setState({ results: Array.from(results.values()) });
       });
-    } else {
-      this.setState({ results: [] });
     }
   };
 
